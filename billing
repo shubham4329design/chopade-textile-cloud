@@ -1,0 +1,979 @@
+<html lang="mr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>Chopade Textile</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background-color: #f4f6f9; margin: 0; padding: 10px; color: #333; }
+        input, button, textarea { -webkit-appearance: none; outline: none; }
+        
+        .main-container { max-width: 1200px; margin: 0 auto; padding-bottom: 50px; }
+        
+        /* ── HEADER ── */
+        .app-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; padding: 15px; background: #fff; border-radius: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.05); border-left: 5px solid #1a237e;}
+        .app-title { font-size: 22px; font-weight: 800; color: #1a237e; margin: 0; }
+        .app-subtitle { font-size: 13px; color: #5c6bc0; font-weight: 600; margin: 0; }
+
+        .header-actions { display: flex; gap: 10px; }
+        .btn-header { padding: 10px 15px; border-radius: 8px; border: none; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; font-size: 14px; }
+        .btn-new { background: #e8f5e9; color: #2e7d32; border: 1px solid #c8e6c9; }
+        .btn-history-toggle { background: #e3f2fd; color: #1565c0; border: 1px solid #bbdefb; }
+
+        /* ── SIDEBAR (HISTORY) ── */
+        .sidebar-overlay { position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 999; display: none; opacity: 0; transition: opacity 0.3s; }
+        .sidebar-overlay.active { display: block; opacity: 1; }
+        .sidebar { position: fixed; top: 0; right: -400px; width: 360px; max-width: 90%; height: 100%; background: #fff; z-index: 1000; box-shadow: -5px 0 15px rgba(0,0,0,0.1); transition: right 0.3s ease; display: flex; flex-direction: column; }
+        .sidebar.active { right: 0; }
+        .sidebar-header { padding: 20px; background: #1a237e; color: white; display: flex; justify-content: space-between; align-items: center; }
+        .sidebar-header h2 { margin: 0; font-size: 18px; }
+        .close-sidebar { background: transparent; border: none; color: white; font-size: 20px; cursor: pointer; }
+        
+        .history-list { flex: 1; overflow-y: auto; padding: 15px; margin: 0; list-style: none; }
+        .history-item { padding: 15px; border: 1px solid #eee; border-radius: 8px; margin-bottom: 12px; background: #fafafa; transition: 0.2s; }
+        .history-item:hover { background: #fff; box-shadow: 0 2px 8px rgba(0,0,0,0.05); }
+        .history-item.active { border-left: 4px solid #1a237e; background: #f0f4ff; }
+        .hist-title { font-weight: bold; color: #1a237e; font-size: 14px; margin-bottom: 5px; }
+        .hist-meta { font-size: 12px; color: #555; margin-bottom: 10px; }
+        .hist-actions { display: flex; gap: 6px; }
+        .btn-hist { flex: 1; padding: 8px 5px; border: none; border-radius: 6px; font-size: 12px; font-weight: bold; cursor: pointer; display: flex; align-items: center; justify-content: center; gap: 4px; transition: 0.1s; }
+        .btn-load { background: #e3f2fd; color: #1565c0; }
+        .btn-pdf { background: #fff3e0; color: #e65100; }
+        .btn-delete { background: #ffebee; color: #c62828; }
+
+        .carry-forward-alert { background: #e8f5e9; color: #2e7d32; padding: 12px 15px; border-radius: 10px; border-left: 5px solid #4caf50; font-size: 14px; font-weight: bold; margin-bottom: 15px; display: none; }
+
+        /* ── LENS AUTO-FILL ── */
+        .lens-paste-bar { background: #fff; border-radius: 12px; padding: 12px 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); margin-bottom: 15px; display: flex; align-items: center; gap: 12px; border: 1px solid #e2e8f0; border-left: 4px solid #3b82f6; flex-wrap: wrap;}
+        .lens-title { font-size: 14px; font-weight: bold; color: #1e40af; display: flex; align-items: center; gap: 6px; white-space: nowrap;}
+        .lens-paste-bar textarea { flex: 1; min-width: 220px; height: 42px; padding: 10px 12px; border-radius: 8px; border: 1px solid #cbd5e1; font-size: 14px; background: #f8fafc; color: #334155; resize: none; overflow: hidden; white-space: nowrap;}
+        .btn-lens-fill { background: #3b82f6; color: white; border: none; padding: 11px 20px; border-radius: 8px; font-size: 14px; font-weight: bold; cursor: pointer; display: flex; align-items: center; gap: 6px; white-space: nowrap;}
+
+        /* ── FORM CARDS ── */
+        .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 15px; box-shadow: 0 2px 8px rgba(0,0,0,0.04); border: 1px solid #edf2f7; }
+        .card-title { font-size: 16px; font-weight: bold; color: #1a237e; margin-top: 0; margin-bottom: 15px; display: flex; align-items: center; gap: 8px; border-bottom: 1px solid #edf2f7; padding-bottom: 10px; }
+        
+        .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 15px; }
+        .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 12px; }
+        .form-group { margin-bottom: 15px; }
+        .form-group label { display: block; font-size: 13px; font-weight: 600; color: #4a5568; margin-bottom: 6px; }
+        .form-group input { width: 100%; padding: 10px 12px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 15px; background: #f8fafc; font-weight: 500; }
+        .form-group input:focus { border-color: #3f51b5; background: #fff; box-shadow: 0 0 0 3px rgba(63,81,181,0.1); }
+
+        /* ── METER ENTRY GRID ── */
+        .meters-wrapper { width: 100%; overflow-x: auto; padding-bottom: 10px; }
+        .meters-container { display: flex; gap: 15px; }
+        .meter-col { background: #f8fafc; padding: 15px; border-radius: 10px; border: 1px solid #e2e8f0; display: flex; flex-direction: column; min-width: 220px; flex-shrink: 0; }
+        .meter-col-title { font-size: 14px; font-weight: bold; color: #1a237e; border-bottom: 2px solid #e2e8f0; padding-bottom: 8px; margin-bottom: 12px; text-align: center; }
+        .meter-row { display: flex; align-items: center; margin-bottom: 6px; }
+        .meter-row label { width: 40px; font-size: 14px; color: #555; font-weight: bold; }
+        .meter-row input { flex: 1; padding: 8px; border: 1px solid #cbd5e1; border-radius: 6px; font-size: 15px; font-weight: bold; text-align: center; background: #fff; color: #000; }
+        .subtotal-row { margin-top: auto; padding-top: 12px; border-top: 2px dashed #4caf50; font-weight: bold; color: #2e7d32; display: flex; justify-content: space-between; font-size: 15px; align-items: center; }
+
+        .btn-container { display: flex; gap: 15px; flex-wrap: wrap; margin-top: 20px; }
+        .btn-submit { background: #10b981; color: white; border: none; padding: 14px; flex: 1; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(16, 185, 129, 0.3); min-width: 220px; }
+        .btn-print { background: #e67e22; color: white; border: none; padding: 14px; flex: 1; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; box-shadow: 0 4px 10px rgba(230, 126, 34, 0.3); display: none; min-width: 220px; }
+
+        /* ── OUTPUT SHEETS ── */
+        .output-container { margin-top: 30px; display: none; }
+        .packing-slip-view, .stock-book-view, .bill-view { background-color: #fff9d6; border: 2px solid #f39c12; padding: 25px; border-radius: 6px; margin-bottom: 30px; width: 100%; max-width: 800px; margin-left: auto; margin-right: auto; color: #000; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
+        .stock-book-view { background-color: #fce4ec; border-color: #e91e63; }
+        .bill-view { background-color: #fffdf0; border-color: #d4ac0d; }
+        
+        .slip-title { text-align: center; font-size: 24px; font-weight: bold; border-bottom: 2px solid #333; padding-bottom: 5px; margin-bottom: 15px; width: fit-content; margin: 0 auto 15px auto; text-transform: uppercase;}
+        
+        .slip-table { width: 100%; border-collapse: collapse; border: 2px solid #333; margin-bottom: 20px; background-color: #fff9d6; }
+        .slip-table th, .slip-table td { border: 1px solid #333; padding: 6px; text-align: center; font-size: 15px; font-weight: bold; }
+        .slip-table th { background-color: rgba(0,0,0,0.05); }
+        
+        .stock-title { text-align: center; font-size: 24px; font-weight: bold; margin-bottom: 10px; color: #880e4f; border: 1px solid #880e4f; width: fit-content; margin: 0 auto 15px auto; padding: 5px 20px; border-radius: 5px;}
+        .stock-columns { display: table; width: 100%; table-layout: fixed; }
+        .stock-col { display: table-cell; width: 50%; padding: 0 15px; vertical-align: top; }
+        .stock-col:first-child { border-right: 2px solid #e91e63; }
+        .flex-row { display: flex; justify-content: space-between; align-items: baseline; margin-bottom: 12px; border-bottom: 1px dotted #333; padding-bottom: 4px; font-size: 15px; }
+        
+        .bill-owner { text-align: center; font-size: 20px; font-weight: bold; margin: 0 0 15px 0; border-bottom: 2px solid #333; padding-bottom: 10px; }
+        .bill-table { width: 100%; border-collapse: collapse; margin-top: 15px; border: 2px solid #333;}
+        .bill-table th, .bill-table td { border: 1px solid #333; padding: 12px; font-size: 15px; }
+        .bill-table th { background-color: transparent; text-align: center; border-bottom: 2px solid #333;}
+        .bill-total-row td { font-weight: bold; border-top: 2px solid #333;}
+
+        
+@page{ size:A4 portrait; margin:4mm; }
+
+@media print{
+body{margin:0!important;padding:0!important;}
+body *{visibility:hidden!important;}
+
+.output-container,.output-container *{
+visibility:visible!important;
+}
+
+.app-header,.dashboard-cards,.lens-paste-bar,.card,.btn-container,
+.sidebar,.sidebar-overlay,.carry-forward-alert,#siteLogo{
+display:none!important;
+}
+
+.packing-slip-view,.stock-book-view,.bill-view{
+display:block!important;
+width:100%!important;
+max-width:100%!important;
+margin:0!important;
+padding:5mm!important;
+overflow:hidden!important;
+box-shadow:none!important;
+}
+
+.packing-slip-view{
+height:auto!important;min-height:auto!important;
+page-break-after:always!important;
+}
+
+.stock-book-view{page-break-after:always!important;}
+.bill-view{page-break-after:auto!important;}
+.packing-slip-view,.stock-book-view,.bill-view{page-break-inside:avoid!important;break-inside:avoid!important;}
+
+.slip-table th,.slip-table td{
+padding:2px!important;
+}
+}
+
+
+            .packing-slip-view { page-break-after: always !important; }
+            .stock-book-view { page-break-after: always !important; }
+            .bill-view { page-break-after: auto !important; }
+
+            table, tr, td, th {
+                page-break-inside: avoid !important;
+                break-inside: avoid !important;
+            }
+
+            .slip-table th, .slip-table td,
+            .bill-table th, .bill-table td {
+                padding: 4px !important;
+                font-size: 12px !important;
+            }
+
+            .slip-title, .stock-title {
+                font-size: 20px !important;
+            }
+        }
+    
+.dashboard-cards{display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;margin-bottom:15px}
+.d-card{background:linear-gradient(135deg,#1a237e,#3949ab);color:#fff;padding:16px;border-radius:14px;box-shadow:0 8px 20px rgba(0,0,0,.12)}
+.d-card .v{font-size:22px;font-weight:800}
+.card{border-radius:16px!important;box-shadow:0 8px 24px rgba(0,0,0,.08)!important}
+.app-header{background:linear-gradient(135deg,#ffffff,#eef2ff)!important}
+.history-item{border-radius:12px!important}
+@media(max-width:768px){
+ .btn-container{position:sticky;bottom:0;background:#f4f6f9;padding:10px;z-index:10}
+ .meter-row input{font-size:18px!important;padding:10px!important}
+}
+
+
+@media print{
+*{
+-webkit-print-color-adjust: exact !important;
+print-color-adjust: exact !important;
+}
+
+.packing-slip-view{
+background:#fff9d6 !important;
+border:2px solid #f39c12 !important;
+}
+
+.stock-book-view{
+background:#fce4ec !important;
+border:2px solid #e91e63 !important;
+}
+
+.bill-view{
+background:#fffdf0 !important;
+border:2px solid #d4ac0d !important;
+}
+
+.slip-table{
+background:#fff9d6 !important;
+}
+}
+
+</style>
+</head>
+<body>
+
+<div class="main-container">
+    <div class="app-header">
+        
+<div style="display:flex;align-items:center;gap:12px;">
+    <img id="site5RIQCBISnxT5vFB//9k=" style="height:60px;width:auto;border-radius:8px;">
+    <div class="app-title-section">
+        <h1 class="app-title">Chopade Textile</h1>
+        <p class="app-subtitle">स्लिप • स्टॉक • बिल</p>
+    </div>
+</div>
+
+        <div class="header-actions">
+            <button class="btn-header btn-new" onclick="startNewBill()"><i class="fas fa-plus"></i> New Bill</button>
+            <button class="btn-header btn-history-toggle" onclick="toggleSidebar()"><i class="fas fa-history"></i> History</button>
+        </div>
+    </div>
+
+    <div class="sidebar-overlay" id="sidebarOverlay" onclick="toggleSidebar()"></div>
+    <div class="sidebar" id="historySidebar">
+        <div class="sidebar-header">
+            <h2><i class="fas fa-folder-open"></i> Saved Bills History</h2>
+            <button class="close-sidebar" onclick="toggleSidebar()"><i class="fas fa-times"></i></button>
+        </div>
+        <ul class="history-list" id="historyList"></ul>
+    </div>
+
+    
+<div class="dashboard-cards">
+<div class="d-card"><div>तागे</div><div class="v" id="dashTags">0</div></div>
+<div class="d-card"><div>मीटर</div><div class="v" id="dashMeters">0</div></div>
+<div class="d-card"><div>बिल</div><div class="v" id="dashBill">₹0</div></div>
+<div class="d-card"><div>सूत स्टॉक</div><div class="v" id="dashYarn">0</div></div>
+</div>
+
+<div id="carryForwardNote" class="carry-forward-alert">
+        <i class="fas fa-arrow-right"></i> <b>Previous Stock:</b> Yarn (सूत) = <span id="cfYarn">0.000</span> Kg | Cuts (कट) = <span id="cfCuts">0.00</span>
+    </div>
+
+    <div class="lens-paste-bar">
+        <div class="lens-title"><i class="fas fa-camera"></i> Auto-Fill (Lens)</div>
+        <textarea id="lensPasteInput" placeholder="कॉपी केलेला मजकूर येथे Paste करा..."></textarea>
+        <button class="btn-lens-fill" onclick="runGoogleLensAutoFill()"><i class="fas fa-bolt"></i> Auto-Fill</button>
+    </div>
+
+    <div class="input-panel">
+        <div class="card">
+            <h3 class="card-title"><i class="fas fa-file-invoice"></i> प्राथमिक माहिती</h3>
+            <div class="grid-2">
+                <div class="form-group"><label>कारखानदाराचे नाव</label><input type="text" id="ownerName" value="Chopade Textile"></div>
+                <div class="form-group"><label>पार्टीचे नाव</label><input type="text" id="partyName" placeholder="उदा. केशव टेक्सटाईल"></div>
+                <div class="form-group"><label>गाव/पत्ता</label><input type="text" id="villageName" value="इचलकरंजी"></div>
+                <div class="form-group"><label>स्लिप नं.</label><input type="text" id="slipNo" placeholder="उदा. 47"></div>
+            </div>
+            <div class="form-group"><label>तारीख</label><input type="text" id="slipDate"></div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title"><i class="fas fa-layer-group"></i> कापड तपशील आणि दर</h3>
+            <div class="grid-3">
+                <div class="form-group"><label>फणी</label><input type="number" id="specFani" value="53"></div>
+                <div class="form-group"><label>पीक</label><input type="number" id="specPick" value="46"></div>
+                <div class="form-group"><label>पन्हा</label><input type="number" id="specWidth" value="60"></div>
+            </div>
+            <div class="grid-2" style="margin-top: 15px;">
+                <div class="form-group"><label>सुताचा ॲव्हरेज</label><input type="number" id="yarnAvg" value="0.0528" step="0.0001"></div>
+                <div class="form-group"><label>मजुरी दर</label><input type="number" id="wageRate" value="4.03" step="0.01"></div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title"><i class="fas fa-box-open"></i> स्टॉक बॅलन्स आणि कपात सेटिंग</h3>
+            <div class="grid-2">
+                <div class="form-group"><label>मागील सूत (Kg)</label><input type="number" id="prevYarn" value="0" step="0.001"></div>
+                <div class="form-group"><label>नवीन सूत (+ Kg)</label><input type="number" id="newYarnIn" value="0" step="0.001"></div>
+                <div class="form-group"><label>मागील कट शिल्लक</label><input type="number" id="prevCuts" value="0" step="0.01"></div>
+                <div class="form-group"><label>नवीन बीम कट (+)</label><input type="number" id="newCutsIn" value="0" step="0.01"></div>
+            </div>
+            
+            <div style="background: #fff3e0; padding: 14px; border-radius: 8px; border: 1px dashed #ffb74d; margin-top: 10px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="color:#d35400; font-weight:bold;"><i class="fas fa-cut"></i> दिलेले एकूण कट (मॅन्युअल ऍडजस्टमेंट)</label>
+                    <input type="number" id="manualGivenCuts" placeholder="उदा. 30.50 (रिकामे ठेवल्यास ताग्यांइतके कट वजा होतील)" step="0.01" style="border-color:#ffb74d;">
+                </div>
+            </div>
+
+            <div style="background: #e3f2fd; padding: 14px; border-radius: 8px; border: 1px dashed #64b5f6; margin-top: 15px;">
+                <div class="form-group" style="margin:0;">
+                    <label style="color:#1565c0; font-weight:bold;"><i class="fas fa-percentage"></i> TDS कपात (% मध्ये - Default 1%)</label>
+                    <input type="number" id="tdsPercentInput" value="1" step="0.01" style="border-color:#64b5f6;">
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <h3 class="card-title"><i class="fas fa-th"></i> मीटर एंट्री (प्रत्येक 20 ताग्यांनंतर नवीन लाईन)</h3>
+            <div class="meters-wrapper">
+                <div class="meters-container" id="metersContainer"></div>
+            </div>
+        </div>
+
+        <div class="btn-container">
+            <button class="btn-submit" onclick="processTextileData(true)"><i class="fas fa-save"></i> Save करा व हिशोब काढा</button>
+            <button class="btn-print" id="printBtn" onclick="window.print()"><i class="fas fa-print"></i> PDF Print करा</button>
+        </div>
+    </div>
+    
+    <div class="output-container" id="outputArea">
+        
+        <div class="packing-slip-view">
+            <div class="slip-title">Packing Slip</div>
+            <div style="text-align:center; font-weight:bold; font-size:20px; margin-bottom: 20px; border-bottom: 1px solid #333; padding-bottom: 10px;" id="slipOwnerName"></div>
+            
+            <div style="font-size: 15px; line-height: 1.8; margin-bottom: 15px;">
+                <b>मेसर्स:</b> <span id="slipPartyName"></span> <span style="float:right;"><b>मु.</b> <span id="slipVillageName"></span></span><br>
+                <b>नंबर:</b> <span id="outSlipNo"></span> <span style="float:right;"><b>तारीख:</b> <span id="outSlipDate"></span></span><br>
+                
+                <div style="display:flex; justify-content:space-between; margin-top: 10px; border-top: 1px dashed #333; padding-top: 10px; padding-bottom: 5px; border-bottom: 1px dashed #333; margin-bottom: 15px;">
+                    <span><b>सूत नंबर:</b> ________</span>
+                    <span><b>फणी:</b> <span id="outFani"></span></span>
+                    <span><b>पीक:</b> <span id="outPick"></span></span>
+                    <span><b>पन्हा:</b> <span id="outPanha"></span></span>
+                </div>
+            </div>
+            
+            <div id="slipTableContainer"></div>
+            
+            <div style="margin-top:20px; font-weight:bold; font-size:15px; line-height:1.8;">
+                <div style="display:flex; justify-content:space-between; align-items:flex-end;">
+                    <div>माल घेणाऱ्याची सही <br>_________________</div>
+                    <div style="text-align:center; font-size:18px; font-weight:bold; padding:0 20px; margin-bottom:35px;">
+                        एकूण तागे : <span id="outTotalTags">0</span>
+                    </div>
+                    <div style="text-align:right;">
+                        <div id="outColSums"></div>
+                        <div style="border-top:2px solid #333; margin-top:5px; padding-top:5px; font-size:18px;">
+    एकूण मीटर: <span id="outTotalMeters">0.00</span>
+</div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="stock-book-view">
+            <div class="stock-title">स्टॉक बुक</div>
+            <div style="text-align: left; margin-bottom: 15px;">
+                <b>कारखानदाराचे नांव:</b> <span id="stockOwnerName" style="border-bottom: 1px dotted #333;"></span><br>
+                <b>पार्टीचे नांव:</b> <span id="stockPartyName" style="border-bottom: 1px dotted #333;"></span><br>
+            </div>
+            <div style="display:flex; justify-content:space-between; margin-bottom: 20px; border-bottom: 2px double #880e4f; padding-bottom: 10px;">
+                <span><b>नंबर:</b> <span id="stockSlipNo"></span></span><span><b>तारीख:</b> <span id="stockDate"></span></span>
+            </div>
+            <!-- ✅ FIX: Added stock quality row here so stFaniPick / stWidth IDs actually exist in HTML -->
+            <div style="text-align:center; margin-bottom:15px; font-size:14px; color:#555;">
+                <b>क्वालिटी:</b> फणी <span id="stFaniPick">-</span> | पन्हा <span id="stWidth">-</span>"
+            </div>
+            <div class="stock-columns">
+                <div class="stock-col">
+                    <div class="stock-section-title">सूताचे स्टॉक</div>
+                    <div class="flex-row"><span class="label">मागील स्टॉक</span><span class="value"><span id="stPrevYarn">0.000</span> Kg</span></div>
+                    <div class="flex-row"><span class="label">+ नवीन घेतलेला सूत</span><span class="value"><span id="stNewYarn">0.000</span> Kg</span></div>
+                    <div style="text-align: right; font-size: 13px; font-weight: bold; color: #444; margin-top: -8px; margin-bottom: 8px;">Net Meter - <span id="stNetMeters">0.0</span></div>
+                    <div class="flex-row" style="border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 6px 0; align-items: center;"><span class="label"><b>एकूण सूत</b></span><span class="value"><span id="stTotalYarn">0.000</span> Kg</span></div>
+                    <div class="flex-row"><span class="label">लागणारा सूत</span><span class="value"><span id="stYarnReq">0.000</span> Kg</span></div>
+                    <div class="flex-row" style="border-top: 2px solid #333; margin-top: 15px; padding-top: 10px;"><span class="label"><b>शिल्लक सूत</b></span><span class="value" style="color:#c0392b;"><span id="stFinalYarn">0.000</span> Kg</span></div>
+                </div>
+                <div class="stock-col">
+                    <div class="stock-section-title">कटाचा स्टॉक</div>
+                    <div class="flex-row"><span class="label">मागील शिल्लक कट</span><span class="value" id="stPrevCuts">0.00</span></div>
+                    <div class="flex-row"><span class="label">+ नवीन बीम कट</span><span class="value" id="stNewCuts">0.00</span></div>
+                    <div class="flex-row" style="border-top: 1px solid #333; border-bottom: 1px solid #333; padding: 6px 0; align-items: center;"><span class="label"><b>एकूण कट</b></span><span class="value" id="stTotalCuts">0.00</span></div>
+                    <div class="flex-row" style="margin-top: 15px;"><span class="label">तयार तागे</span><span class="value" id="stTotalTagsRef">0</span></div>
+                    <div class="flex-row"><span class="label" style="color:#d35400;">दिलेले कट (वजा)</span><span class="value" style="color:#d35400; font-weight:bold;" id="stGivenCuts">0.00</span></div>
+                    <div class="flex-row" style="border-top: 2px solid #333; margin-top: 15px; padding-top: 10px;"><span class="label"><b>एकूण देणे (शिल्लक कट)</b></span><span class="value" id="stFinalCuts">0.00</span></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bill-view">
+            <div class="slip-title">INVOICE</div>
+            <div class="bill-owner" id="billOwnerName"></div>
+            <div style="font-size: 15px; line-height: 2; border-bottom: 2px solid #333; padding-bottom: 10px; margin-bottom: 20px;">
+                <b>बिल नंबर:</b> <span id="billNo"></span> <span style="float:right;"><b>तारीख:</b> <span id="billDate"></span></span><br>
+                <b>मेसर्स:</b> <span id="billPartyName"></span><br>
+                <div style="display: flex; justify-content: space-between;"><span><b>पत्ता:</b> <span id="billVillageName"></span></span><span>हस्ते: _________________</span></div>
+            </div>
+            <table class="bill-table">
+                <thead><tr><th style="width:45%;">मालाचे वर्णन</th><th style="width:20%;">मीटर</th><th style="width:15%;">दर</th><th style="width:20%;">आकार (रुपये)</th></tr></thead>
+                <tbody>
+                    <tr>
+                        <td style="line-height:1.8; vertical-align:top; border-bottom: none;">
+                            <div style="text-align: center; font-weight: bold; margin-bottom: 10px;"><span style="border-bottom: 1px solid #333; padding-bottom: 2px;">क्वालिटी</span><br><span id="billFaniPick">53 × 46</span><br>पन्हा: <span id="billWidth">60</span></div>
+                            <div style="text-align: center; font-weight: bold; font-size: 17px; margin-top: 15px;">तागे : <span id="billTotalTags"></span></div>
+                        </td>
+                        <td style="text-align:center; vertical-align:top; padding-top:20px; font-weight:bold; border-bottom: none;" id="billNetMeters">0.0</td>
+                        <td style="text-align:center; vertical-align:top; padding-top:20px; border-bottom: none;" id="billRateDisplay">4.03</td>
+                        <td style="text-align:right; vertical-align:top; padding-top:20px; font-weight:bold; padding-right:15px; border-bottom: none;" id="billAmount">0</td>
+                    </tr>
+                    <tr id="tdsRow" style="display:none;">
+                        <td style="text-align:right; border-top: none; border-bottom: none;">TDS कपात (<span id="tdsPercentDisplay">0</span>%) :</td>
+                        <td colspan="2" style="border-top: none; border-bottom: none;"></td>
+                        <td style="text-align:right; padding-right:15px; border-top: none; border-bottom: none; color:#d35400;">- <span id="tdsAmountDisplay">0</span></td>
+                    </tr>
+                    <tr class="bill-total-row">
+                        <td style="text-align:center; font-size: 18px;"><b>एकूण निव्वळ देय रक्कम</b></td>
+                        <td colspan="2" style="border-right: 1px solid #333;"></td>
+                        <td style="text-align:right; padding-right:15px; font-size:18px;" id="billTotalAmount">0</td>
+                    </tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+
+<script>
+
+function updateDashboard(tags,meters,bill,yarn){
+ let a=document.getElementById('dashTags'); if(a)a.innerText=tags;
+ let b=document.getElementById('dashMeters'); if(b)b.innerText=meters.toFixed?meters.toFixed(1):meters;
+ let c=document.getElementById('dashBill'); if(c)c.innerText='₹'+bill.toLocaleString('en-IN');
+ let d=document.getElementById('dashYarn'); if(d)d.innerText=yarn.toFixed?yarn.toFixed(3):yarn;
+}
+
+    // ✅ Global state
+    let textileHistory = [];
+    let maxMetersCount = 40;
+    const STORAGE_KEY = 'textile_db_history_v6';
+
+    // ✅ Init on page load
+    window.onload = function() {
+        renderMeterBoxes(40);
+        setTodayDate();
+        loadHistoryFromStorage();
+    };
+
+    function setTodayDate() {
+        let today = new Date();
+        document.getElementById('slipDate').value =
+            String(today.getDate()).padStart(2, '0') + "/" +
+            String(today.getMonth() + 1).padStart(2, '0') + "/" +
+            today.getFullYear();
+    }
+
+    function loadHistoryFromStorage() {
+        try {
+            let stored = localStorage.getItem(STORAGE_KEY);
+            if (stored) {
+                textileHistory = JSON.parse(stored);
+                renderHistoryList();
+            }
+        } catch(e) {
+            console.warn('History load error:', e);
+            textileHistory = [];
+        }
+    }
+
+    // ✅ DYNAMIC METER BOXES — always multiples of 20, minimum 40
+    function renderMeterBoxes(requiredCount) {
+        let columnsNeeded = Math.ceil(requiredCount / 20);
+        if (columnsNeeded < 2) columnsNeeded = 2;
+        maxMetersCount = columnsNeeded * 20;
+
+        let container = document.getElementById('metersContainer');
+        container.innerHTML = '';
+
+        for (let col = 0; col < columnsNeeded; col++) {
+            let colDiv = document.createElement('div');
+            colDiv.className = 'meter-col';
+            let startRange = col * 20 + 1;
+            let endRange = (col + 1) * 20;
+
+            let html = `<div class="meter-col-title"><span>तागे ${startRange} ते ${endRange}</span></div>`;
+            for (let i = 1; i <= 20; i++) {
+                let tagNum = col * 20 + i;
+                html += `<div class="meter-row">
+                    <label>${tagNum}.</label>
+                    <input type="number" id="tag_${tagNum}" step="0.01" oninput="calculateSubtotals()">
+                </div>`;
+            }
+            html += `<div class="subtotal-row"><span>बेरीज:</span> <span id="subtotal_${col}">0.00</span></div>`;
+            colDiv.innerHTML = html;
+            container.appendChild(colDiv);
+        }
+        calculateSubtotals();
+    }
+
+    function calculateSubtotals() {
+        let cols = Math.ceil(maxMetersCount / 20);
+        for (let col = 0; col < cols; col++) {
+            let sum = 0;
+            for (let i = 1; i <= 20; i++) {
+                let el = document.getElementById('tag_' + (col * 20 + i));
+                if (el && el.value) sum += parseFloat(el.value) || 0;
+            }
+            let subEl = document.getElementById('subtotal_' + col);
+            if (subEl) subEl.innerText = sum.toFixed(2);
+        }
+    }
+
+    // ✅ SIDEBAR TOGGLE
+    function toggleSidebar() {
+        document.getElementById('historySidebar').classList.toggle('active');
+        document.getElementById('sidebarOverlay').classList.toggle('active');
+    }
+
+    // ✅ NEW BILL — carry forward last stock
+    function startNewBill() {
+        renderMeterBoxes(40);
+        document.getElementById('slipNo').value = '';
+        document.getElementById('newYarnIn').value = '0';
+        document.getElementById('newCutsIn').value = '0';
+        document.getElementById('manualGivenCuts').value = '';
+        document.getElementById('tdsPercentInput').value = '1';
+        document.getElementById('outputArea').style.display = 'none';
+        document.getElementById('printBtn').style.display = 'none';
+        setTodayDate();
+
+        if (textileHistory.length > 0) {
+            let lastBill = textileHistory[0];
+            let cf_yarn = parseFloat(lastBill.finalYarnStock) || 0;
+            let cf_cuts = parseFloat(lastBill.finalCutsStock) || 0;
+            document.getElementById('prevYarn').value = cf_yarn.toFixed(3);
+            document.getElementById('prevCuts').value = cf_cuts.toFixed(2);
+            document.getElementById('cfYarn').innerText = cf_yarn.toFixed(3);
+            document.getElementById('cfCuts').innerText = cf_cuts.toFixed(2);
+            document.getElementById('carryForwardNote').style.display = 'block';
+        } else {
+            document.getElementById('prevYarn').value = '0';
+            document.getElementById('prevCuts').value = '0';
+            document.getElementById('carryForwardNote').style.display = 'none';
+        }
+
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+
+    // ✅ GOOGLE LENS AUTO-FILL
+    function runGoogleLensAutoFill() {
+        let text = document.getElementById('lensPasteInput').value;
+        if (!text.trim()) { alert("कृपया मजकूर पेस्ट करा!"); return; }
+
+        let cleanText = text.replace(/[Oo]/g, '0').replace(/,/g, '.');
+
+        let partyMatch = cleanText.match(/(?:मेसर्स|ग्राहक|Messrs)\s*[:.]?\s*([A-Za-z\u0900-\u097F\s]+)/i);
+        if (partyMatch && partyMatch[1]) {
+            let name = partyMatch[1].split('\n')[0].trim();
+            if (name.length > 2) document.getElementById('partyName').value = name;
+        }
+
+        let slipMatch = cleanText.match(/(?:नंबर|No|नंबर\s*४७|No\.\s*47)\s*[:.]?\s*(\d+)/i);
+        if (slipMatch) document.getElementById('slipNo').value = slipMatch[1];
+
+        let dateMatch = cleanText.match(/(\d{1,2}[\/\-.]\d{1,2}[\/\-.]\d{2,4})/);
+        if (dateMatch) document.getElementById('slipDate').value = dateMatch[1];
+
+        let tokens = cleanText.split(/[\s\n|\[\]\-]+/);
+        let meters = [];
+
+        for (let i = 0; i < tokens.length; i++) {
+            let t = tokens[i];
+            if (!t) continue;
+            if (t.includes('.')) {
+                let val = parseFloat(t);
+                if (val >= 85 && val <= 160) meters.push(val);
+                continue;
+            }
+            let num = parseInt(t, 10);
+            if (!isNaN(num) && num >= 85 && num <= 160 && t.length >= 3) {
+                let decimalStr = "00";
+                let nextT = tokens[i + 1];
+                if (nextT !== undefined && /^\d{1,2}$/.test(nextT)) {
+                    decimalStr = nextT.length === 1 ? nextT + "0" : nextT;
+                    i++;
+                }
+                meters.push(parseFloat(`${num}.${decimalStr}`));
+            }
+        }
+
+        if (meters.length > maxMetersCount) renderMeterBoxes(meters.length);
+
+        for (let i = 1; i <= maxMetersCount; i++) {
+            let tagEl = document.getElementById('tag_' + i);
+            if (tagEl) tagEl.value = '';
+        }
+
+        meters.forEach((m, i) => {
+            let el = document.getElementById('tag_' + (i + 1));
+            if (el) el.value = m.toFixed(2);
+        });
+
+        calculateSubtotals();
+        alert(`🎉 Auto-Fill यशस्वी! एकूण ${meters.length} ताग्यांचे मीटर भरले आहेत.`);
+    }
+
+    // ✅ MAIN PROCESS FUNCTION — all null-safe, no missing IDs
+    function processTextileData(saveToLog) {
+        // --- Read inputs ---
+        let ownerName   = document.getElementById('ownerName').value.trim()   || "Chopade Textile";
+        let partyName   = document.getElementById('partyName').value.trim()   || "केशव टेक्सटाईल";
+        let villageName = document.getElementById('villageName').value.trim() || "इचलकरंजी";
+        let slipNo      = document.getElementById('slipNo').value.trim();
+        let slipDate    = document.getElementById('slipDate').value.trim();
+
+        let specFani  = document.getElementById('specFani').value  || "53";
+        let specPick  = document.getElementById('specPick').value  || "46";
+        let specWidth = document.getElementById('specWidth').value || "60";
+        let yarnAvg   = parseFloat(document.getElementById('yarnAvg').value)   || 0.0528;
+        let wageRate  = parseFloat(document.getElementById('wageRate').value)  || 4.03;
+
+        let prevYarn   = parseFloat(document.getElementById('prevYarn').value)   || 0;
+        let newYarnIn  = parseFloat(document.getElementById('newYarnIn').value)  || 0;
+        let prevCuts   = parseFloat(document.getElementById('prevCuts').value)   || 0;
+        let newCutsIn  = parseFloat(document.getElementById('newCutsIn').value)  || 0;
+
+        let tdsPercent = parseFloat(document.getElementById('tdsPercentInput').value) || 0;
+
+        // --- Collect meter data ---
+        let allInputObj = {};
+        let totalTags   = 0;
+        let grossMeters = 0;
+
+        for (let i = 1; i <= maxMetersCount; i++) {
+            let el  = document.getElementById('tag_' + i);
+            let val = el ? (parseFloat(el.value) || 0) : 0;
+            allInputObj['tag_' + i] = val > 0 ? val : "";
+            if (val > 0) { totalTags++; grossMeters += val; }
+        }
+
+        if (totalTags === 0) {
+            alert("कृपया ताग्याचे मीटर भरा!");
+            return;
+        }
+
+        // --- Calculations ---
+        let rawNetMeters  = grossMeters * 0.97;
+        let netMeters     = Math.floor(rawNetMeters * 10) / 10;
+
+        let manualCutsVal    = document.getElementById('manualGivenCuts').value.trim();
+        let givenCutsToDeduct = (manualCutsVal !== "") ? parseFloat(manualCutsVal) : totalTags;
+
+        let yarnReq        = netMeters * yarnAvg;
+        let rawBill        = netMeters * wageRate;
+        let grossBillAmt   = Math.floor(rawBill);
+        let appliedTDS     = 0;
+        let finalBillAmt   = grossBillAmt;
+
+        if (tdsPercent > 0) {
+            appliedTDS   = Math.round(grossBillAmt * (tdsPercent / 100));
+            finalBillAmt = grossBillAmt - appliedTDS;
+        }
+
+        let totalYarnStock  = prevYarn + newYarnIn;
+        let finalYarnStock  = totalYarnStock - yarnReq;
+        let totalCutsStock  = prevCuts + newCutsIn;
+        let finalCutsStock  = totalCutsStock - givenCutsToDeduct;
+
+        // --- Safely set element text (null-safe helper) ---
+        function setText(id, val) {
+            let el = document.getElementById(id);
+            if (el) el.innerText = val;
+        }
+        function setInner(id, val) {
+            let el = document.getElementById(id);
+            if (el) el.innerHTML = val;
+        }
+        function setStyle(id, prop, val) {
+            let el = document.getElementById(id);
+            if (el) el.style[prop] = val;
+        }
+
+        // --- Fill Packing Slip ---
+        setText('slipOwnerName', ownerName);
+        setText('slipPartyName', partyName);
+        setText('slipVillageName', villageName);
+        setText('outSlipNo', slipNo);
+        setText('outSlipDate', slipDate);
+        setText('outFani', specFani);
+        setText('outPick', specPick);
+        setText('outPanha', specWidth);
+        setText('outTotalMeters', grossMeters.toFixed(2));
+        setText('outTotalTags', totalTags);
+
+        // ✅ Build packing slip table — फोटोप्रमाणे:
+        // colsNeeded = actual last filled tag नुसार — 20 चे multiple
+        // 1-16 filled → 1 col (20) | 1-25 → 2 cols (40) | 1-45 → 3 cols (60)
+
+        // Last filled tag शोधा
+        let lastFilledTag = 0;
+        for (let i = maxMetersCount; i >= 1; i--) {
+            if (allInputObj['tag_' + i] !== "") { lastFilledTag = i; break; }
+        }
+        // Minimum 1 col, round up to next multiple of 20
+        let colsNeeded = Math.max(1, Math.ceil(lastFilledTag / 20));
+
+        // ✅ एकच table — सर्व groups एकत्र (फोटोप्रमाणे)
+        // Header row: तागा नं. | मीटर | तागा नं. | मीटर | ...
+        let theadCols = '';
+        for (let c = 0; c < colsNeeded; c++) {
+            let start = c * 20 + 1;
+            let end   = (c + 1) * 20;
+            theadCols += `<th style="width:${Math.floor(60/colsNeeded)}%;">तागा नं.<br><small>${start}-${end}</small></th><th style="width:${Math.floor(40/colsNeeded)}%;">मीटर</th>`;
+        }
+
+        let slipTablesHtml = `<table class="slip-table"><thead><tr>${theadCols}</tr></thead><tbody>`;
+
+        for (let row = 1; row <= 20; row++) {
+            slipTablesHtml += `<tr>`;
+            for (let c = 0; c < colsNeeded; c++) {
+                let tagNum = c * 20 + row;
+                let tagVal = parseFloat(allInputObj['tag_' + tagNum]);
+                let displayNum = tagNum <= maxMetersCount ? tagNum : "";
+                let displayVal = (!isNaN(tagVal) && tagVal > 0) ? tagVal.toFixed(2) : '';
+                slipTablesHtml += `<td>${displayNum}</td><td style="text-align:center;">${displayVal}</td>`;
+            }
+            slipTablesHtml += `</tr>`;
+        }
+
+        // ✅ Subtotal row at bottom — फक्त numbers, no text (फोटोप्रमाणे)
+        slipTablesHtml += `<tr style="border-top:2px solid #333; background:rgba(0,0,0,0.04);">`;
+        for (let c = 0; c < colsNeeded; c++) {
+            let sum = 0;
+            for (let i = 1; i <= 20; i++) {
+                sum += parseFloat(allInputObj['tag_' + (c * 20 + i)]) || 0;
+            }
+            let displaySum = sum > 0 ? sum.toFixed(2) : '';
+            slipTablesHtml += `<td style="font-size:12px; color:#555; text-align:right; padding-right:4px;"></td>
+                               <td style="text-align:center; font-weight:bold; font-size:15px;">${displaySum}</td>`;
+        }
+        slipTablesHtml += `</tr></tbody></table>`;
+
+        setInner('slipTableContainer', slipTablesHtml);
+
+        // ✅ Col sums footer — फक्त numbers, no "ग्रुप X बेरीज:" text
+        let colSumsHtml = '';
+        for (let c = 0; c < colsNeeded; c++) {
+            let sum = 0;
+            for (let i = 1; i <= 20; i++) {
+                sum += parseFloat(allInputObj['tag_' + (c * 20 + i)]) || 0;
+            }
+            if (sum > 0) colSumsHtml += `<b>${sum.toFixed(2)}</b><br>`;
+        }
+        setInner('outColSums', colSumsHtml);
+
+        // --- Fill Stock Book ---
+        setText('stockOwnerName', ownerName);
+        setText('stockPartyName', partyName);
+        setText('stockSlipNo', slipNo);
+        setText('stockDate', slipDate);
+        // ✅ These IDs now exist in HTML (quality row in stock book)
+        setText('stFaniPick', `${specFani} x ${specPick}`);
+        setText('stWidth', specWidth);
+
+        setText('stPrevYarn',     prevYarn.toFixed(3));
+        setText('stNewYarn',      newYarnIn.toFixed(3));
+        setText('stTotalYarn',    totalYarnStock.toFixed(3));
+        setText('stYarnReq',      yarnReq.toFixed(3));
+        setText('stFinalYarn',    finalYarnStock.toFixed(3));
+        setText('stNetMeters',    netMeters.toFixed(1) + "0");
+        setText('stPrevCuts',     prevCuts.toFixed(2));
+        setText('stNewCuts',      newCutsIn.toFixed(2));
+        setText('stTotalCuts',    totalCutsStock.toFixed(2));
+        setText('stTotalTagsRef', totalTags);
+        setText('stGivenCuts',    givenCutsToDeduct.toFixed(2) + " कट");
+        setText('stFinalCuts',    finalCutsStock.toFixed(2));
+
+        // --- Fill Invoice ---
+        setText('billOwnerName',  ownerName);
+        setText('billPartyName',  partyName);
+        setText('billVillageName',villageName);
+        setText('billNo',         slipNo);
+        setText('billDate',       slipDate);
+        setText('billFaniPick',   `${specFani} × ${specPick}`);
+        setText('billWidth',      specWidth);
+        setText('billRateDisplay',wageRate.toFixed(2));
+        setText('billTotalTags',  totalTags);
+        setText('billNetMeters',  netMeters.toFixed(1) + "0");
+        setText('billAmount',     grossBillAmt.toLocaleString('en-IN'));
+        setText('billTotalAmount',finalBillAmt.toLocaleString('en-IN'));
+
+        // TDS row
+        if (tdsPercent > 0) {
+            setText('tdsPercentDisplay', tdsPercent);
+            setText('tdsAmountDisplay',  appliedTDS.toLocaleString('en-IN'));
+            setStyle('tdsRow', 'display', 'table-row');
+        } else {
+            setStyle('tdsRow', 'display', 'none');
+        }
+
+        // --- Show output ---
+        setStyle('outputArea', 'display', 'block');
+        setStyle('printBtn',   'display', 'inline-flex');
+updateDashboard(totalTags,netMeters,finalBillAmt,finalYarnStock);
+
+        // --- Save to history ---
+        if (saveToLog) {
+            let logPayload = {
+                id: 'slip_' + (slipNo || 'X') + '_' + Date.now(),
+                ownerName, partyName, villageName, slipNo, slipDate,
+                prevYarn, newYarnIn, prevCuts, newCutsIn,
+                tdsPercentInput: tdsPercent,
+                specFani, specPick, specWidth, yarnAvg, wageRate,
+                manualGivenCuts: manualCutsVal,
+                givenCutsToDeduct,
+                grossMeters, netMeters,
+                finalBillAmt, finalBillAmount: finalBillAmt,
+                finalYarnStock, finalCutsStock,
+                totalTags,
+                metersData: allInputObj
+            };
+
+            // Update existing slip or prepend new
+            let matchIdx = textileHistory.findIndex(item => item.slipNo === slipNo && slipNo !== "");
+            if (matchIdx > -1) {
+                textileHistory[matchIdx] = logPayload;
+            } else {
+                textileHistory.unshift(logPayload);
+            }
+
+            if (textileHistory.length > 200) textileHistory.pop();
+
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(textileHistory));
+            } catch(e) {
+                alert("⚠️ Local Storage भरले आहे. काही जुने बिल Delete करा.");
+            }
+
+            renderHistoryList();
+            document.getElementById('outputArea').scrollIntoView({ behavior: 'smooth', block: 'start' });
+        }
+    }
+
+    // ✅ RENDER HISTORY LIST
+    function renderHistoryList() {
+        let container = document.getElementById('historyList');
+        if (textileHistory.length === 0) {
+            container.innerHTML = `<li style="color:#7f8c8d; font-size:13px; text-align:center; padding:20px;">अजून कोणताही Data Save केलेला नाही.</li>`;
+            return;
+        }
+        let html = '';
+        textileHistory.forEach(item => {
+            // ✅ Use finalBillAmt (new) or finalBillAmount (legacy) safely
+            let amt = item.finalBillAmt !== undefined ? item.finalBillAmt : (item.finalBillAmount || 0);
+            html += `<li class="history-item">
+                <div class="hist-title">Slip No: ${item.slipNo || '-'} | ${item.partyName || '-'}</div>
+                <div class="hist-meta">
+                    Date: ${item.slipDate || '-'} &nbsp;|&nbsp;
+                    Tags: ${item.totalTags || 0} &nbsp;|&nbsp;
+                    ₹ ${Number(amt).toLocaleString('en-IN')}
+                </div>
+                <div class="hist-actions">
+                    <button class="btn-hist btn-load"   onclick="loadHistoryItem('${item.id}')"><i class="fas fa-folder-open"></i> Load</button>
+                    <button class="btn-hist btn-pdf"    onclick="printHistoryItem('${item.id}')"><i class="fas fa-file-pdf"></i> PDF</button>
+                    <button class="btn-hist btn-delete" onclick="deleteHistoryItem('${item.id}')"><i class="fas fa-trash"></i> Delete</button>
+                </div>
+            </li>`;
+        });
+        container.innerHTML = html;
+    }
+
+    // ✅ LOAD HISTORY ITEM
+    function loadHistoryItem(id) {
+        let item = textileHistory.find(x => x.id === id);
+        if (!item) return;
+
+        // Figure out how many meter boxes to render
+        let savedMeterCount = 0;
+        for (let key in item.metersData) {
+            if (item.metersData[key] !== "") {
+                let tagIndex = parseInt(key.replace('tag_', ''));
+                if (tagIndex > savedMeterCount) savedMeterCount = tagIndex;
+            }
+        }
+        renderMeterBoxes(Math.max(40, savedMeterCount));
+
+        document.getElementById('ownerName').value       = item.ownerName      || "Chopade Textile";
+        document.getElementById('partyName').value        = item.partyName      || "";
+        document.getElementById('villageName').value      = item.villageName    || "इचलकरंजी";
+        document.getElementById('slipNo').value           = item.slipNo         || "";
+        document.getElementById('slipDate').value         = item.slipDate       || "";
+        document.getElementById('specFani').value         = item.specFani       || "53";
+        document.getElementById('specPick').value         = item.specPick       || "46";
+        document.getElementById('specWidth').value        = item.specWidth      || "60";
+        document.getElementById('yarnAvg').value          = item.yarnAvg        || 0.0528;
+        document.getElementById('wageRate').value         = item.wageRate       || 4.03;
+        document.getElementById('prevYarn').value         = item.prevYarn       || 0;
+        document.getElementById('newYarnIn').value        = item.newYarnIn      || 0;
+        document.getElementById('prevCuts').value         = item.prevCuts       || 0;
+        document.getElementById('newCutsIn').value        = item.newCutsIn      || 0;
+        document.getElementById('manualGivenCuts').value  = item.manualGivenCuts || "";
+        document.getElementById('tdsPercentInput').value  = item.tdsPercentInput !== undefined ? item.tdsPercentInput : 1;
+
+        for (let i = 1; i <= maxMetersCount; i++) {
+            let el = document.getElementById('tag_' + i);
+            if (el) el.value = item.metersData['tag_' + i] || "";
+        }
+
+        calculateSubtotals();
+        processTextileData(false); // render output without re-saving
+        toggleSidebar();
+    }
+
+    // ✅ PRINT HISTORY ITEM
+    function printHistoryItem(id) {
+        loadHistoryItem(id);
+        setTimeout(() => { window.print(); }, 600);
+    }
+
+    // ✅ DELETE HISTORY ITEM
+    function deleteHistoryItem(id) {
+        if (confirm("हे बिल Delete करायचे आहे का?")) {
+            textileHistory = textileHistory.filter(x => x.id !== id);
+            try {
+                localStorage.setItem(STORAGE_KEY, JSON.stringify(textileHistory));
+            } catch(e) {}
+            renderHistoryList();
+        }
+    }
+</script>
+
+<script>
+function fitPackingSlip(){
+ const slip=document.querySelector('.packing-slip-view');
+ const table=document.querySelector('.slip-table');
+ if(!slip||!table) return;
+
+ let font=14;
+ while(slip.scrollHeight>slip.clientHeight && font>4){
+   font--;
+   table.querySelectorAll('th,td').forEach(el=>{
+      el.style.fontSize=font+'px';
+      el.style.padding='1px';
+      el.style.lineHeight='1';
+   });
+ }
+}
+window.addEventListener('beforeprint',fitPackingSlip);
+</script>
+<script src="auth-api.js?v=2"></script>
+
+</body>
+    
+
+<script>
+document.addEventListener("DOMContentLoaded", function() {
+    // Login Screen बनवणे
+    var loginDiv = document.createElement("div");
+    loginDiv.id = "customLoginScreen";
+    loginDiv.style.cssText = "position:fixed; top:0; left:0; width:100%; height:100%; background:#f4f6f9; z-index:99999; display:flex; justify-content:center; align-items:center;";
+    loginDiv.innerHTML = `
+        <div style="background:#fff; padding:30px; border-radius:12px; box-shadow:0 4px 15px rgba(0,0,0,0.1); text-align:center; max-width:400px; width:90%; border-top: 5px solid #1a237e;">
+            <h2 style="color:#1a237e; margin-top:0;">Chopade Textile</h2>
+            <p style="color:#555; margin-bottom:20px; font-weight:600;"></p>
+            <input type="text" id="loginUser" placeholder="Username" style="width:100%; padding:10px; margin-bottom:15px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px;">
+            <input type="password" id="loginPass" placeholder="Password" style="width:100%; padding:10px; margin-bottom:20px; border:1px solid #cbd5e1; border-radius:8px; font-size:15px;">
+            <button id="loginBtn" style="width:100%; background:#10b981; color:white; border:none; padding:12px; border-radius:8px; font-size:16px; font-weight:bold; cursor:pointer;">Login</button>
+            <p id="loginError" style="color:red; display:none; margin-top:15px; font-size:14px; font-weight:bold;">चुकीचा Username किंवा Password!</p>
+        </div>
+    `;
+    document.body.appendChild(loginDiv);
+
+    // Login Check करणे
+    document.getElementById("loginBtn").addEventListener("click", function() {
+        var u = document.getElementById("loginUser").value;
+        var p = document.getElementById("loginPass").value;
+        
+        // इथे तू Username आणि Password बदलू शकतोस
+        if (u === "123" && p === "123") {
+            document.getElementById("customLoginScreen").style.display = "none";
+            var mainApp = document.querySelector(".main-container");
+            if(mainApp) mainApp.style.setProperty("display", "block", "important");
+        } else {
+            document.getElementById("loginError").style.display = "block";
+        }
+    });
+});
+</script>
